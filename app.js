@@ -1,41 +1,51 @@
 /* eslint-disable no-undef */
-
 import express from "express"
 import bodyParser from "body-parser";
 import { swaggerUi, swaggerSpec } from './swagger.js'; 
-const app = express();
 import sqlite from 'sqlite3'
-const db = new sqlite.Database("./quote.db", sqlite.OPEN_READWRITE, (err) =>{
+import userRoutes from './routes/users.js'
+
+const app = express();
+
+// Inicializar base de datos (crear tabla si no existe)
+const db = new sqlite.Database("./quote.db", sqlite.OPEN_READWRITE | sqlite.OPEN_CREATE, (err) => {
     if(err) return console.error(err);
+    console.log('Conectado a quote.db');
 });
+
+// Crear tabla si no existe
+const createTableSQL = `
+    CREATE TABLE IF NOT EXISTS quote (
+        ID INTEGER PRIMARY KEY AUTOINCREMENT,
+        movie TEXT NOT NULL,
+        quote TEXT NOT NULL,
+        character TEXT NOT NULL
+    )
+`;
+
+db.run(createTableSQL, (err) => {
+    if (err) {
+        console.error("Error al crear la tabla:", err);
+    } else {
+        console.log("Tabla 'quote' lista");
+    }
+});
+
 app.use(bodyParser.json());
 
-app.post('/quote',(req,res) =>{
-    try{
-        console.log(req.body.movie)
-       return res.json({
-            status: 200,
-            success: true,
-        });
-     } catch{ // Catch general, no es lo estandar pero funciona.
-            return res.json({
-                status: 400,
-                success: false,
-            });
-        }
-});
+app.use('/users', userRoutes);
 
-const port = 3000;
-
-// Serve Swagger API Docs at '/api-docs'
+// Swagger API Docs
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Example API endpoint (you can have more routes here)
+// Ruta principal
 app.get('/', (req, res) => {
     res.send('Hello, API!');
 });
 
-// Listen on the specified port
+const port = 3000;
+
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
+    console.log(`Swagger docs: http://localhost:${port}/api-docs`);
 });
