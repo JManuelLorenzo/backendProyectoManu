@@ -8,11 +8,11 @@ const db = new sqlite3.Database('./quote.db');
  * @swagger
  * /users:
  *   get:
- *     summary: Obtiene todas las citas
+ *     summary: Obtiene todas las citas no eliminadas
  *     tags: [Users]
  *     responses:
  *       200:
- *         description: Lista de citas obtenida exitosamente
+ *         description: Lista de citas obtenida exitosamente (sin las eliminadas)
  *         content:
  *           application/json:
  *             schema:
@@ -32,13 +32,14 @@ const db = new sqlite3.Database('./quote.db');
  *         description: Error en el servidor
  */
 router.get('/', (req, res) => {
-  db.all('SELECT * FROM quote', [], (err, rows) => { 
+  db.all('SELECT * FROM quote WHERE eliminado = 0', [], (err, rows) => { 
     if (err) {
       return res.status(500).json({ error: err.message });
     }
     res.json(rows);
   });
 });
+
 
 /**
  * @swagger
@@ -90,7 +91,7 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
   
-  const sql = 'INSERT INTO quote (movie, quote, character) VALUES (?, ?, ?)';
+  const sql = 'INSERT INTO quote (movie, quote, character, eliminado) VALUES (?, ?, ?, 0)';
   const params = [movie, quote, character];
   
   db.run(sql, params, function (err) {
@@ -105,11 +106,11 @@ router.post('/', (req, res) => {
 });
 /**
  * @swagger
- * /users:
- *   delete:
- *     summary: Eliminar una cita específica
+ * /users/eliminar:
+ *   put:
+ *     summary: Eliminar lógicamente una cita específica
  *     tags: [Users]
- *     description: Elimina una cita de la base de datos según movie, quote y character.
+ *     description: Marca como eliminada una cita en la base de datos según movie, quote y character (eliminación lógica).
  *     requestBody:
  *       required: true
  *       content:
@@ -135,7 +136,7 @@ router.post('/', (req, res) => {
  *                 description: Personaje que dijo la cita.
  *     responses:
  *       200:
- *         description: Cita eliminada exitosamente
+ *         description: Cita eliminada lógicamente exitosamente
  *         content:
  *           application/json:
  *             schema:
@@ -143,11 +144,11 @@ router.post('/', (req, res) => {
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Cita eliminada exitosamente"
+ *                   example: "Cita eliminada lógicamente"
  *                 affectedRows:
  *                   type: integer
  *                   example: 1
- *                   description: Cantidad de filas eliminadas
+ *                   description: Cantidad de filas actualizadas
  *       400:
  *         description: Faltan campos requeridos
  *         content:
@@ -179,26 +180,38 @@ router.post('/', (req, res) => {
  *                   type: string
  *                   example: "Error de base de datos"
  */
-router.delete('/', (req, res) => {
+
+router.put('/eliminar', (req, res) => {
   const { movie, quote, character } = req.body;
-  
+
   if (!movie || !quote || !character) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
-  
-  const sql = 'DELETE FROM quote WHERE movie = ? AND quote = ? AND character = ?';
+
+  const sql = `
+    UPDATE quote
+    SET eliminado = 1
+    WHERE movie = ? AND quote = ? AND character = ? AND eliminado = 0
+  `;
+
   const params = [movie, quote, character];
-  
+
   db.run(sql, params, function (err) {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
-    res.status(201).json({
-      message: 'Cita eliminada exitosamente',
-      quoteId: this.changes,
+
+    if (this.changes === 0) {
+      return res.status(404).json({ message: 'No se encontró ninguna cita para eliminar o ya estaba eliminada.' });
+    }
+
+    res.status(200).json({
+      message: 'Cita eliminada lógicamente',
+      affectedRows: this.changes,
     });
   });
 });
+
 /**
  * @swagger
  * /users/{id}:
@@ -274,16 +287,16 @@ router.delete('/', (req, res) => {
  *                   example: "Error de base de datos"
  */
 
-router.put('/:id', (req, res) => {
+router.put('/:ID', (req, res) => {
   const { quote } = req.body;
-  const { id } = req.params;
+  const { ID } = req.params;
 
   if (!quote) {
     return res.status(400).json({ error: 'Falta el nuevo texto de la cita' });
   }
 
-  const sql = 'UPDATE quotes SET quote = ? WHERE id = ?';
-  const params = [quote, id];
+  const sql = 'UPDATE quote SET quote = ? WHERE ID = ?';
+  const params = [quote, ID];
 
   db.run(sql, params, function (err) {
     if (err) {

@@ -19,7 +19,8 @@ const createTableSQL = `
         ID INTEGER PRIMARY KEY AUTOINCREMENT,
         movie TEXT NOT NULL,
         quote TEXT NOT NULL,
-        character TEXT NOT NULL
+        character TEXT NOT NULL,
+        eliminado TEXT NOT NULL
     )
 `;
 
