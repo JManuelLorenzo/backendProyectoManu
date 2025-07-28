@@ -1,18 +1,29 @@
 import express from 'express';
-import sqlite3 from 'sqlite3';
+import {
+  getAllQuotes,
+  createQuote,
+  updateQuote,
+  deleteQuote
+} from '../controllers/usersControllers.js';
 
 const router = express.Router();
-const db = new sqlite3.Database('./quote.db'); 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Quotes
+ *   description: API para gestionar frases de películas
+ */
 
 /**
  * @swagger
  * /users:
  *   get:
- *     summary: Obtiene todas las citas no eliminadas
- *     tags: [Users]
+ *     summary: Obtener todas las citas no eliminadas
+ *     tags: [Quotes]
  *     responses:
  *       200:
- *         description: Lista de citas obtenida exitosamente (sin las eliminadas)
+ *         description: Lista de citas obtenidas exitosamente
  *         content:
  *           application/json:
  *             schema:
@@ -29,24 +40,16 @@ const db = new sqlite3.Database('./quote.db');
  *                   character:
  *                     type: string
  *       500:
- *         description: Error en el servidor
+ *         description: Error interno del servidor
  */
-router.get('/', (req, res) => {
-  db.all('SELECT * FROM quote WHERE eliminado = 0', [], (err, rows) => { 
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(rows);
-  });
-});
-
+router.get('/', getAllQuotes);
 
 /**
  * @swagger
  * /users:
  *   post:
- *     summary: Agrega una nueva cita de película
- *     tags: [Users]
+ *     summary: Crear una nueva cita
+ *     tags: [Quotes]
  *     requestBody:
  *       required: true
  *       content:
@@ -70,248 +73,69 @@ router.get('/', (req, res) => {
  *     responses:
  *       201:
  *         description: Cita creada exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 quoteId:
- *                   type: integer
- *       400:
- *         description: Faltan campos requeridos
- *       500:
- *         description: Error en el servidor
- */
-router.post('/', (req, res) => {
-  const { movie, quote, character } = req.body;
-  
-  if (!movie || !quote || !character) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
-  }
-  
-  const sql = 'INSERT INTO quote (movie, quote, character, eliminado) VALUES (?, ?, ?, 0)';
-  const params = [movie, quote, character];
-  
-  db.run(sql, params, function (err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.status(201).json({
-      message: 'Cita creada exitosamente',
-      quoteId: this.lastID,
-    });
-  });
-});
-/**
- * @swagger
- * /users/eliminar:
- *   put:
- *     summary: Eliminar lógicamente una cita específica
- *     tags: [Users]
- *     description: Marca como eliminada una cita en la base de datos según movie, quote y character (eliminación lógica).
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - movie
- *               - quote
- *               - character
- *             properties:
- *               movie:
- *                 type: string
- *                 example: "El Padrino"
- *                 description: Nombre de la película.
- *               quote:
- *                 type: string
- *                 example: "Le haré una oferta que no podrá rechazar."
- *                 description: Texto de la cita.
- *               character:
- *                 type: string
- *                 example: "Vito Corleone"
- *                 description: Personaje que dijo la cita.
- *     responses:
- *       200:
- *         description: Cita eliminada lógicamente exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Cita eliminada lógicamente"
- *                 affectedRows:
- *                   type: integer
- *                   example: 1
- *                   description: Cantidad de filas actualizadas
- *       400:
- *         description: Faltan campos requeridos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Faltan campos requeridos"
- *       404:
- *         description: No se encontró la cita para eliminar
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "No se encontró la cita para eliminar"
  *       500:
  *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Error de base de datos"
  */
-
-router.put('/eliminar', (req, res) => {
-  const { movie, quote, character } = req.body;
-
-  if (!movie || !quote || !character) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
-  }
-
-  const sql = `
-    UPDATE quote
-    SET eliminado = 1
-    WHERE movie = ? AND quote = ? AND character = ? AND eliminado = 0
-  `;
-
-  const params = [movie, quote, character];
-
-  db.run(sql, params, function (err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-
-    if (this.changes === 0) {
-      return res.status(404).json({ message: 'No se encontró ninguna cita para eliminar o ya estaba eliminada.' });
-    }
-
-    res.status(200).json({
-      message: 'Cita eliminada lógicamente',
-      affectedRows: this.changes,
-    });
-  });
-});
+router.post('/', createQuote);
 
 /**
  * @swagger
  * /users/{id}:
  *   put:
  *     summary: Actualizar una cita existente
- *     tags: [Users]
- *     description: Actualiza el texto de una cita específica identificada por su ID.
+ *     tags: [Quotes]
  *     parameters:
  *       - in: path
  *         name: id
- *         required: true
- *         description: ID de la cita que se desea actualizar.
  *         schema:
  *           type: integer
- *           example: 1
+ *         required: true
+ *         description: ID de la cita a actualizar
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - quote
  *             properties:
+ *               movie:
+ *                 type: string
  *               quote:
  *                 type: string
- *                 example: "Voy a hacerle una oferta mejor."
- *                 description: Nuevo texto de la cita.
+ *               character:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Cita actualizada exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Cita actualizada exitosamente"
- *                 updatedRows:
- *                   type: integer
- *                   example: 1
- *                   description: Cantidad de filas actualizadas
- *       400:
- *         description: Faltan campos requeridos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Falta el nuevo texto de la cita"
  *       404:
- *         description: No se encontró una cita con ese ID
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "No se encontró una cita con ese ID"
+ *         description: Cita no encontrada
  *       500:
  *         description: Error interno del servidor
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Error de base de datos"
  */
+router.put('/:id', updateQuote);
 
-router.put('/:ID', (req, res) => {
-  const { quote } = req.body;
-  const { ID } = req.params;
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Eliminación lógica de una cita por ID
+ *     tags: [Quotes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID de la cita a eliminar
+ *     responses:
+ *       200:
+ *         description: Cita marcada como eliminada
+ *       404:
+ *         description: Cita no encontrada
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.delete('/:id', deleteQuote);
 
-  if (!quote) {
-    return res.status(400).json({ error: 'Falta el nuevo texto de la cita' });
-  }
-
-  const sql = 'UPDATE quote SET quote = ? WHERE ID = ?';
-  const params = [quote, ID];
-
-  db.run(sql, params, function (err) {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    if (this.changes === 0) {
-      return res.status(404).json({ message: 'No se encontró una cita con ese ID' });
-    }
-
-    res.status(200).json({
-      message: 'Cita actualizada exitosamente',
-      updatedRows: this.changes,
-    });
-  });
-});
-;
 
 export default router;
