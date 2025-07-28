@@ -22,5 +22,5 @@ Permite simplificar el proyecto, ya que en vez de utilizar secuencias de texto S
 con metodos de prisma. Haciendo más compacto y uniforme el código a través de objetos.
 ## Instalacion:
 Se requiere tener NodeJS y realizar npm install. Luego de eso deberian actualizarse los modulos de NodeJS.
-Posteriormente con realizar npm start en la consola ya se deberia poner en marcha el server.
+Posteriormente con realizar npm start en la consola y ya se deberia poner  marcha el server.
 Luego accediendo a http://localhost:3000/api-docs ya se puede checkear el proyecto.
