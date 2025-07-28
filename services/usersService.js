@@ -10,17 +10,25 @@ export async function createQuote(movie, quote, character) {
   });
 }
 export async function updateQuote(ID, newQuote) {
-  const result = await prisma.quote.update({
-    where: { ID, deleted: false },
+  const quote = await prisma.quote.findUnique({ where: { ID: ID } });
+  if (!quote || quote.deleted) return false;
+
+  await prisma.quote.update({
+    where: { ID: ID },
     data: { quote: newQuote },
   });
-  return result.count > 0;
+
+  return true;
 }
 
 export async function deleteQuote(ID) {
-  const result = await prisma.quote.update({
-    where: { ID, deleted: false },
+  const quote = await prisma.quote.findUnique({ where: { ID: ID } });
+  if (!quote || quote.deleted) return false;
+
+  await prisma.quote.update({
+    where: { ID: ID },
     data: { deleted: true },
   });
-  return result.count > 0;
+
+  return true;
 }

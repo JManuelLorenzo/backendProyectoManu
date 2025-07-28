@@ -77,16 +77,22 @@ router.get('/', getAllQuotes);
  *         description: Error interno del servidor
  */
 router.post('/', createQuote);
+/**
+ * @swagger
+ * tags:
+ *   name: Quotes
+ *   description: Endpoints para gestionar citas de películas
+ */
 
 /**
  * @swagger
- * /users/{id}:
+ * /users/{ID}:
  *   put:
- *     summary: Actualizar una cita existente
+ *     summary: Actualizar el texto de una cita existente
  *     tags: [Quotes]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: ID
  *         schema:
  *           type: integer
  *         required: true
@@ -97,32 +103,41 @@ router.post('/', createQuote);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - quote
  *             properties:
- *               movie:
- *                 type: string
  *               quote:
  *                 type: string
- *               character:
- *                 type: string
+ *                 example: "La vida es bella"
  *     responses:
  *       200:
  *         description: Cita actualizada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Cita actualizada exitosamente
+ *       400:
+ *         description: Falta el nuevo texto de la cita
  *       404:
  *         description: Cita no encontrada
  *       500:
  *         description: Error interno del servidor
  */
-router.put('/:id', updateQuote);
+router.put('/:ID', updateQuote);
 
 /**
  * @swagger
- * /users/{id}:
+ * /users/{ID}:
  *   delete:
  *     summary: Eliminación lógica de una cita por ID
  *     tags: [Quotes]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: ID
  *         schema:
  *           type: integer
  *         required: true
@@ -130,12 +145,19 @@ router.put('/:id', updateQuote);
  *     responses:
  *       200:
  *         description: Cita marcada como eliminada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Cita eliminada lógicamente
  *       404:
  *         description: Cita no encontrada
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/:id', deleteQuote);
-
+router.delete('/:ID', deleteQuote);
 
 export default router;

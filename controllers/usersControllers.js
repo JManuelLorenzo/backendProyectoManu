@@ -23,22 +23,27 @@ export const createQuote = async (req, res) => {
   }
   try {
     const result = await serviceCreateQuote(movie, quote, character);
-    res.status(201).json({ message: 'Cita creada exitosamente', quoteId: result.id });
+    res.status(201).json({ message: 'Cita creada exitosamente', quoteId: result.ID });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
-
 export const updateQuote = async (req, res) => {
   const { quote } = req.body;
-  const { id } = req.params;
-
+  const { ID } = req.params;
+  
   if (!quote) {
     return res.status(400).json({ error: 'Falta el nuevo texto de la cita' });
   }
-
+  
   try {
-    const changes = await serviceUpdateQuote(parseInt(id), quote);
+    // PARSEAR AQUÍ, antes de enviar al servicio
+    const parsedID = parseInt(ID);
+    if (isNaN(parsedID)) {
+      return res.status(400).json({ error: 'ID debe ser un número válido' });
+    }
+    
+    const changes = await serviceUpdateQuote(parsedID, quote); // Enviar el int
     if (!changes) {
       return res.status(404).json({ message: 'No se encontró una cita con ese ID' });
     }
@@ -49,10 +54,16 @@ export const updateQuote = async (req, res) => {
 };
 
 export const deleteQuote = async (req, res) => {
-  const { id } = req.params;
-
+  const { ID } = req.params;
+  
   try {
-    const changes = await serviceDeleteQuote(parseInt(id));
+    // PARSEAR AQUÍ, antes de enviar al servicio
+    const parsedID = parseInt(ID);
+    if (isNaN(parsedID)) {
+      return res.status(400).json({ error: 'ID debe ser un número válido' });
+    }
+    
+    const changes = await serviceDeleteQuote(parsedID); // Enviar el int
     if (!changes) {
       return res.status(404).json({ message: 'No se encontró ninguna cita con ese ID' });
     }
