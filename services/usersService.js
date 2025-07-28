@@ -1,40 +1,26 @@
-import db from '../db.js';
+import prisma from '../prismaclient.js'; // ajustá el path si está en otro lugar
 
-export const getAllQuotes = () => {
-  return new Promise((resolve, reject) => {
-    db.all('SELECT * FROM quote WHERE eliminado = 0', [], (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows);
-    });
-  });
-};
+export async function getAllQuotes() {
+  return await prisma.quote.findMany({ where: { deleted: false } });
+}
 
-export const createQuote = (movie, quote, character) => {
-  const sql = 'INSERT INTO quote (movie, quote, character, eliminado) VALUES (?, ?, ?, 0)';
-  return new Promise((resolve, reject) => {
-    db.run(sql, [movie, quote, character], function (err) {
-      if (err) return reject(err);
-      resolve({ lastID: this.lastID });
-    });
+export async function createQuote(movie, quote, character) {
+  return await prisma.quote.create({
+    data: { movie, quote, character, deleted: false },
   });
-};
+}
+export async function updateQuote(ID, newQuote) {
+  const result = await prisma.quote.update({
+    where: { ID, deleted: false },
+    data: { quote: newQuote },
+  });
+  return result.count > 0;
+}
 
-export const updateQuote = (id, quote) => {
-  const sql = 'UPDATE quote SET quote = ? WHERE ID = ?';
-  return new Promise((resolve, reject) => {
-    db.run(sql, [quote, id], function (err) {
-      if (err) return reject(err);
-      resolve(this.changes);
-    });
+export async function deleteQuote(ID) {
+  const result = await prisma.quote.update({
+    where: { ID, deleted: false },
+    data: { deleted: true },
   });
-};
-
-export const deleteQuote = (id) => {
-  const sql = 'UPDATE quote SET eliminado = 1 WHERE ID = ? AND eliminado = 0';
-  return new Promise((resolve, reject) => {
-    db.run(sql, [id], function (err) {
-      if (err) return reject(err);
-      resolve(this.changes);
-    });
-  });
-};
+  return result.count > 0;
+}

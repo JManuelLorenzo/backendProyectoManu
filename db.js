@@ -11,7 +11,7 @@ const createTableSQL = `
     movie TEXT NOT NULL,
     quote TEXT NOT NULL,
     character TEXT NOT NULL,
-    eliminado TEXT NOT NULL
+    deleted TEXT NOT NULL
   )
 `;
 
